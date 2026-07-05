@@ -41,7 +41,9 @@ img{width:100%;max-width:900px;max-height:500px;object-fit:contain;display:block
 .container{margin-top:70px;}
 
 /* Chỉ admin mới thấy */
-.admin-only{display:none;}
+.admin-only{display:none !important;}
+.admin-only.show-admin{display:block !important;}
+button.admin-only.show-admin, span.admin-only.show-admin{display:inline-block !important;}
 
 /* Modal đăng nhập */
 #modalLogin{
@@ -148,12 +150,11 @@ img{width:100%;max-width:900px;max-height:500px;object-fit:contain;display:block
   <!-- Sơ đồ kho: khách xem, admin upload -->
   <div class="box">
     <h2>🖼️ Sơ đồ kho</h2>
-    <div class="admin-only">
+    <div class="admin-only" style="margin-bottom: 15px;">
       <input type="file" id="chonAnh" accept=".jpg,.jpeg,.png,.webp">
       <button class="btn-blue" type="button" onclick="taiAnhLen()">Tải ảnh lên</button>
-      <br><br>
     </div>
-    <img id="anhKho">
+    <img id="anhKho" src="" alt="Chưa có sơ đồ kho">
   </div>
 
   <!-- Tìm kiếm: khách dùng được -->
@@ -207,7 +208,7 @@ img{width:100%;max-width:900px;max-height:500px;object-fit:contain;display:block
   </div>
 
   <!-- Chỉ admin thấy: Công cụ -->
-  <div class="box admin-only">
+  <div class="box admin-only" style="text-align: center;">
     <button class="btn-blue" onclick="xuatExcel()">📊 Xuất Excel</button>
     <button class="btn-gray" onclick="xoaLichSu()">🗑️ Xóa lịch sử</button>
     <button class="btn-red" onclick="xoaToanBo()">❌ Xóa toàn bộ dữ liệu</button>
@@ -219,18 +220,20 @@ img{width:100%;max-width:900px;max-height:500px;object-fit:contain;display:block
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// Đã cấu hình đồng bộ về dự án chung thanhkho-b7c11
 const firebaseConfig = {
-  apiKey: "AIzaSyDH6ezWQhIPmk5pWtd2l48n1oWOVgX1u_g",
-  authDomain: "thanhkho-b9c11.firebaseapp.com",
-  projectId: "thanhkho-b9c11",
-  storageBucket: "thanhkho-b9c11.firebasestorage.app",
-  messagingSenderId: "528755293258",
-  appId: "1:528755293258:web:92d177a31ca40c17a3bab3"
+  apiKey: "AIzaSyCemVOoYh1A6s6FZJn040mQSJot1u0CZYQ",
+  authDomain: "thanhkho-b7c11.firebaseapp.com",
+  projectId: "thanhkho-b7c11",
+  storageBucket: "thanhkho-b7c11.firebasestorage.app",
+  messagingSenderId: "1095588173002",
+  appId: "1:1095588173002:web:98934fd0bd77c961ed9033",
+  measurementId: "G-BFKQ6M8K8M"
 };
 
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
-const DOC_ID = "kho_b9c11";
+const DOC_ID = "kho_b9c11"; // Định danh phân tách dữ liệu của Kho b9
 
 let daDangNhap = false;
 let kho = [];
@@ -240,10 +243,10 @@ let MAT_KHAU  = "123456";
 
 function syncBar(msg, color){
   const el = document.getElementById("syncBar");
-  el.innerText = msg; el.style.color = color||"#111";
+  if(el) { el.innerText = msg; el.style.color = color||"#111"; }
 }
 
-// Lắng nghe Firestore real-time (khách cũng nhận được)
+// Lắng nghe Firestore real-time
 onSnapshot(doc(db,"kho",DOC_ID),(snap)=>{
   if(snap.exists()){
     const d=snap.data();
@@ -271,13 +274,15 @@ async function save(extra){
   }
 }
 
-// Cập nhật giao diện theo quyền
+// Cập nhật giao diện ẩn/hiện chuẩn chỉnh bằng ClassList
 function capNhatQuyen(){
   const els = document.querySelectorAll(".admin-only");
-  els.forEach(el => el.style.display = daDangNhap ? "block" : "none");
-  // Nút trong flex row cần display flex không phải block
-  document.querySelectorAll(".admin-only button, .top-right .admin-only").forEach(el => {
-    el.style.display = daDangNhap ? "inline-block" : "none";
+  els.forEach(el => {
+    if(daDangNhap) {
+      el.classList.add("show-admin");
+    } else {
+      el.classList.remove("show-admin");
+    }
   });
   document.getElementById("btnDangNhap").style.display = daDangNhap ? "none" : "inline-block";
   document.getElementById("badgeUser").className = daDangNhap ? "badge badge-admin" : "badge badge-guest";
@@ -345,8 +350,8 @@ window.doiTaiKhoan = async function(){
 };
 document.getElementById("modalDoiTK").addEventListener("click",function(e){ if(e.target===this) dongModal(); });
 
-// Render
-function setStatus(msg,color="green"){ const el=document.getElementById("status"); el.innerText=msg; el.style.color=color; }
+// Render bảng dữ liệu
+function setStatus(msg,color="green"){ const el=document.getElementById("status"); if(el) { el.innerText=msg; el.style.color=color; } }
 function renderDanhSach(){ document.getElementById("danhSachVatChat").innerHTML=kho.map(i=>`<option value="${i.ten}">`).join(""); }
 function render(){
   const tukhoa=document.getElementById("timkiem").value.toLowerCase();
